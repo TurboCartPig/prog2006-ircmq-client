@@ -1,5 +1,5 @@
 [package]
-name = "zeromq"
+name = "client-rust"
 version = "0.1.0"
 authors = ["Dennis Kristiansen <denniskristiansen@protonmail.com>"]
 edition = "2018"
@@ -8,3 +8,5 @@ edition = "2018"
 
 [dependencies]
 zmq = { version = "0.9.2", features = ["vendored"] }
+serde = { version = "1.0.125", features = ["derive"] }
+serde_json = "1.0.64"
