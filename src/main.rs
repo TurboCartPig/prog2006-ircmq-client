@@ -1,4 +1,5 @@
 use serde::{Deserialize, Serialize};
+use std::io;
 
 /// Messages to be serialized and sent to the server.
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -39,15 +40,28 @@ fn main() {
         sub_socket.set_subscribe(b"A").unwrap();
         sub_socket.connect("tcp://localhost:6666").unwrap();
 
-        let mut msg = zmq::Message::new();
+        let t1 = std::thread::spawn(move || {
+            let mut msg = zmq::Message::new();
+            let stdin = io::stdin();
+            loop {
+                let mut buffer = String::new();
+                stdin.read_line(&mut buffer).unwrap();
+                req_socket.send(&buffer, 0).unwrap();
+                req_socket.recv(&mut msg, 0).unwrap();
+            }
+        });
 
-        for n in 0..10 {
-            req_socket.send(&format!("Hello {}", n), 0).unwrap();
-            req_socket.recv(&mut msg, 0).unwrap();
-            sub_socket.recv_string(0).unwrap().unwrap();
-            sub_socket.recv(&mut msg, 0).unwrap();
-            println!("Received: {}", msg.as_str().unwrap());
-            std::thread::sleep(std::time::Duration::from_secs(1u64));
-        }
+        let t2 = std::thread::spawn(move || {
+            let mut msg = zmq::Message::new();
+
+            loop {
+                sub_socket.recv_string(0).unwrap().unwrap();
+                sub_socket.recv(&mut msg, 0).unwrap();
+                println!("Received: {}", msg.as_str().unwrap());
+            }
+        });
+
+        t1.join().unwrap();
+        t2.join().unwrap();
     }
 }
