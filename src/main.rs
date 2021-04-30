@@ -4,13 +4,22 @@ use crate::MessageType::{Hello, Message};
 
 /// Messages to be serialized and sent to the server.
 #[derive(Clone, Debug, Deserialize, Serialize)]
+#[serde(tag = "tag")]
 enum MessageType {
     /// Initial message sent when a client first connects.
-    Hello { name: String },
+    Hello { name: String, channel: String },
     /// A text message sent from a client to all the other clients, through the server.
-    Message { content: String },
-    /// Final message from client to server, notifying the server, that the client is leaving.
-    Goodbye,
+    Message {
+        name: String,
+        channel: String,
+        content: String,
+    },
+    /// Request a list of members of the current channel.
+    RequestMembers { channel: String },
+    /// Respond with a list of members of the current channel.
+    ResponseMembers { members: Vec<String> },
+    /// Final message from client to server, notifying the server, that the client is disconnecting.
+    Goodbye { name: String, channel: String },
 }
 
 fn main() {
