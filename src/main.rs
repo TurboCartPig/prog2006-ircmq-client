@@ -1,5 +1,6 @@
 use serde::{Deserialize, Serialize};
 use std::io;
+use crate::MessageType::{Hello, Message};
 
 /// Messages to be serialized and sent to the server.
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -46,7 +47,11 @@ fn main() {
             loop {
                 let mut buffer = String::new();
                 stdin.read_line(&mut buffer).unwrap();
-                req_socket.send(&buffer, 0).unwrap();
+
+                let message = Message { content: buffer.to_string() };
+                let message_string = serde_json::to_string(&message).unwrap();
+
+                req_socket.send(&message_string, 0).unwrap();
                 req_socket.recv(&mut msg, 0).unwrap();
             }
         });
