@@ -13,7 +13,7 @@ use std::{
 use tui::{
     backend::CrosstermBackend,
     layout::{Constraint, Direction, Layout},
-    widgets::{Block, Borders, Paragraph},
+    widgets::{Block, Borders, List, ListItem, Paragraph},
     Terminal,
 };
 
@@ -91,6 +91,7 @@ fn termui(
 
     let mut feed = String::new();
     let mut input = String::new();
+    let users = vec![String::from("Sebern")];
 
     loop {
         // Block on event input, either a tick to refresh the UI, or an input event from the user
@@ -143,8 +144,8 @@ fn termui(
                 )
                 .split(f.size());
 
-            let channels = Block::default().title("Channels").borders(Borders::ALL);
-            f.render_widget(channels, chunks[0]);
+            let channels_box = Block::default().title("Channels").borders(Borders::ALL);
+            f.render_widget(channels_box, chunks[0]);
 
             let vertical_chunks = Layout::default()
                 .direction(Direction::Vertical)
@@ -152,16 +153,21 @@ fn termui(
                 .constraints([Constraint::Percentage(90), Constraint::Percentage(10)].as_ref())
                 .split(chunks[1]);
 
-            let feed = Paragraph::new(feed.as_ref())
+            let feed_box = Paragraph::new(feed.as_ref())
                 .block(Block::default().title("Feed").borders(Borders::ALL));
-            f.render_widget(feed, vertical_chunks[0]);
+            f.render_widget(feed_box, vertical_chunks[0]);
 
             let input_box = Paragraph::new(input.as_ref())
                 .block(Block::default().title("Input").borders(Borders::ALL));
             f.render_widget(input_box, vertical_chunks[1]);
 
-            let users = Block::default().title("Users").borders(Borders::ALL);
-            f.render_widget(users, chunks[2]);
+            let items: Vec<_> = users
+                .iter()
+                .map(|user| ListItem::new(user.as_str()))
+                .collect();
+            let users_box =
+                List::new(items).block(Block::default().title("Users").borders(Borders::ALL));
+            f.render_widget(users_box, chunks[2]);
         })?;
     }
 
@@ -196,7 +202,7 @@ fn print_task(
         // If the channel has closed, quit
         if server_sender.send(message).is_err() {
             break;
-    }
+        }
     }
 
     Ok(())
@@ -204,43 +210,26 @@ fn print_task(
 
 fn main() -> anyhow::Result<()> {
     let context = zmq::Context::new();
-    let server = std::env::args().nth(1);
 
-    if server.is_some() {
-        let rep_socket = context.socket(zmq::REP)?;
-        rep_socket.bind("tcp://*:5555")?;
+    let (sender, receiver) = mpsc::channel();
+    let (server_sender, server_receiver) = mpsc::channel();
 
-        let pub_socket = context.socket(zmq::PUB)?;
-        pub_socket.bind("tcp://*:6666")?;
+    let req_socket = context.socket(zmq::REQ)?;
+    req_socket.connect("tcp://localhost:5555")?;
 
-        let mut msg = zmq::Message::new();
+    let sub_socket = context.socket(zmq::SUB)?;
+    sub_socket.set_subscribe(b"A")?;
+    sub_socket.connect("tcp://localhost:6666")?;
 
-        loop {
-            rep_socket.recv(&mut msg, 0)?;
-            println!("Received: {}", msg.as_str().unwrap());
-            rep_socket.send("ACK", 0)?;
-            pub_socket.send("A", zmq::SNDMORE)?;
-            pub_socket.send(msg.as_str().unwrap(), 0)?;
-        }
-    } else {
-        let (sender, receiver) = mpsc::channel();
-        let (server_sender, server_receiver) = mpsc::channel();
+    let t1 = std::thread::spawn(move || chat_task(req_socket, receiver).unwrap());
+    let t2 = std::thread::spawn(move || print_task(sub_socket, server_sender).unwrap());
 
-        let req_socket = context.socket(zmq::REQ)?;
-        req_socket.connect("tcp://localhost:5555")?;
+    termui(sender, server_receiver)?;
 
-        let sub_socket = context.socket(zmq::SUB)?;
-        sub_socket.set_subscribe(b"A")?;
-        sub_socket.connect("tcp://localhost:6666")?;
-
-        let t1 = std::thread::spawn(move || chat_task(req_socket, receiver).unwrap());
-        let t2 = std::thread::spawn(move || print_task(sub_socket, server_sender).unwrap());
-
-        termui(sender, server_receiver)?;
-
-        t1.join().unwrap();
-        t2.join().unwrap();
-    }
+    println!("Hei");
+    t1.join().unwrap();
+    println!("Hei2");
+    t2.join().unwrap();
 
     Ok(())
 }
