@@ -45,7 +45,9 @@ enum Event {
     Tick,
 }
 
-fn tick_task(tick_rate: Duration, event_sender: mpsc::Sender<Event>) -> ! {
+// Generate tick and input events for the TUI.
+// This was yanked from the tui-rs examples
+fn tick_task(tick_rate: Duration, event_sender: mpsc::Sender<Event>) {
     let mut last_tick = Instant::now();
     loop {
         // Poll for tick rate duration, if no new events, send tick event.
@@ -58,14 +60,17 @@ fn tick_task(tick_rate: Duration, event_sender: mpsc::Sender<Event>) -> ! {
             }
         }
         if last_tick.elapsed() >= tick_rate {
-            event_sender.send(Event::Tick).unwrap();
+            if event_sender.send(Event::Tick).is_err() {
+                break;
+            }
             last_tick = Instant::now();
         }
     }
 }
 
+// Some of this was yanked from the tui-rs examples
 fn termui(
-    sender: mpsc::Sender<String>,
+    sender: mpsc::Sender<MessageType>,
     server_receiver: mpsc::Receiver<MessageType>,
 ) -> anyhow::Result<()> {
     // Enable raw mode for the terminal
@@ -95,8 +100,17 @@ fn termui(
                     break;
                 }
                 KeyCode::Enter => {
-                    let msg: String = input.drain(..).collect();
-                    sender.send(msg)?;
+                    // TODO: Take these as input
+                    let name = String::from("Sebern");
+                    let channel = String::from("A");
+
+                    let content: String = input.drain(..).collect();
+                    let message = MessageType::Message {
+                        name,
+                        channel,
+                        content,
+                    };
+                    sender.send(message)?;
                 }
                 KeyCode::Backspace => {
                     input.pop();
@@ -110,15 +124,8 @@ fn termui(
         }
 
         // Pull new messages from the server, ignore any errors
-        while let Ok(MessageType::Message {
-            name,
-            channel,
-            content,
-        }) = server_receiver.try_recv()
-        {
-            feed.push_str(&format!("{} -> ", name));
-            feed.push_str(&content);
-            feed.push('\n');
+        while let Ok(MessageType::Message { name, content, .. }) = server_receiver.try_recv() {
+            feed.push_str(&format!("{} -> {}\n", name, content));
         }
 
         // Draw the TUI
@@ -165,17 +172,11 @@ fn termui(
     Ok(())
 }
 
-fn chat_task(req_socket: zmq::Socket, receiver: mpsc::Receiver<String>) -> anyhow::Result<()> {
+fn chat_task(req_socket: zmq::Socket, receiver: mpsc::Receiver<MessageType>) -> anyhow::Result<()> {
     let mut msg = zmq::Message::new();
 
-    while let Ok(content) = receiver.recv() {
-        let message = MessageType::Message {
-            name: "BOB".to_string(),
-            channel: "A".to_string(),
-            content,
-        };
+    while let Ok(message) = receiver.recv() {
         let message_string = serde_json::to_string(&message)?;
-
         req_socket.send(&message_string, 0)?;
         req_socket.recv(&mut msg, 0)?;
     }
@@ -190,9 +191,15 @@ fn print_task(
     loop {
         let _ = sub_socket.recv_string(0)?.unwrap();
         let message = sub_socket.recv_string(0)?.unwrap();
-        let message = serde_json::from_str(&message)?;
-        server_sender.send(message)?;
+        let message = serde_json::from_str(&message).expect("Serde");
+
+        // If the channel has closed, quit
+        if server_sender.send(message).is_err() {
+            break;
     }
+    }
+
+    Ok(())
 }
 
 fn main() -> anyhow::Result<()> {
