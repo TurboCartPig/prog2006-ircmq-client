@@ -88,7 +88,9 @@ fn termui(
 
     let mut feed = String::new();
     let mut input = String::new();
+
     let users = vec![name.clone()];
+    let channels = vec![channel.clone()];
 
     loop {
         // Block on event input, either a tick to refresh the UI, or an input event from the user
@@ -137,7 +139,12 @@ fn termui(
                 )
                 .split(f.size());
 
-            let channels_box = Block::default().title("Channels").borders(Borders::ALL);
+            let channels: Vec<_> = channels
+                .iter()
+                .map(|channel| ListItem::new(channel.as_ref()))
+                .collect();
+            let channels_box =
+                List::new(channels).block(Block::default().title("Channels").borders(Borders::ALL));
             f.render_widget(channels_box, chunks[0]);
 
             let vertical_chunks = Layout::default()
@@ -154,12 +161,12 @@ fn termui(
                 .block(Block::default().title("Input").borders(Borders::ALL));
             f.render_widget(input_box, vertical_chunks[1]);
 
-            let items: Vec<_> = users
+            let users: Vec<_> = users
                 .iter()
                 .map(|user| ListItem::new(user.as_str()))
                 .collect();
             let users_box =
-                List::new(items).block(Block::default().title("Users").borders(Borders::ALL));
+                List::new(users).block(Block::default().title("Users").borders(Borders::ALL));
             f.render_widget(users_box, chunks[2]);
         })?;
     }
