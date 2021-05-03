@@ -13,3 +13,4 @@ serde_json = "1.0.64"
 crossterm = "0.19.0"
 tui = { version = "0.14.0", default-features = false, features = ["crossterm"] }
 anyhow = "1.0.40"
+clap = "2.33.3"

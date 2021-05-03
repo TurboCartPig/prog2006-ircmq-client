@@ -1,3 +1,5 @@
+use clap::{Arg, App};
+
 use crossterm::{
     event::{self, Event as CEvent, KeyCode},
     execute,
@@ -209,6 +211,33 @@ fn print_task(
 }
 
 fn main() -> anyhow::Result<()> {
+    let matches = App::new("Sebbern program")
+    .version("0.1.0")
+    .author("Sebbern")
+    .about("Sebbern Sebbern")
+    .arg(Arg::with_name("name")
+             .short("n")
+             .long("name")
+             .takes_value(true))
+    .arg(Arg::with_name("channel")
+             .short("c")
+             .long("channel")
+             .takes_value(true))
+    .arg(Arg::with_name("server")
+             .short("s")
+             .long("server")
+             .takes_value(true))
+    .get_matches();
+
+    let name = matches.value_of("name").unwrap_or(" ");
+    println!("Name is: {}", name);
+    
+    let channel = matches.value_of("channel").unwrap_or(" ");
+    println!("Channel is: {}", channel);
+    
+    let server = matches.value_of("server").unwrap_or(" ");
+    println!("Server is: {}", server);
+
     let context = zmq::Context::new();
     let args: Vec<String> = env::args().collect();
 
