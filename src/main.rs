@@ -73,9 +73,11 @@ fn termui(sender: mpsc::Sender<String>) -> anyhow::Result<()> {
         }
     });
 
+    let feed = String::from("This is a chat feed");
     let mut input = String::new();
 
     loop {
+        // Block on event input, either a tick to refresh the UI, or an input event from the user
         match rx.recv()? {
             Event::Input(ev) => match ev.code {
                 KeyCode::Esc => {
@@ -95,6 +97,8 @@ fn termui(sender: mpsc::Sender<String>) -> anyhow::Result<()> {
             },
             Event::Tick => {}
         }
+
+        // Draw the TUI
         terminal.draw(|f| {
             let chunks = Layout::default()
                 .direction(Direction::Horizontal)
@@ -112,9 +116,19 @@ fn termui(sender: mpsc::Sender<String>) -> anyhow::Result<()> {
             let channels = Block::default().title("Channels").borders(Borders::ALL);
             f.render_widget(channels, chunks[0]);
 
+            let vertical_chunks = Layout::default()
+                .direction(Direction::Vertical)
+                .margin(0)
+                .constraints([Constraint::Percentage(90), Constraint::Percentage(10)].as_ref())
+                .split(chunks[1]);
+
+            let feed = Paragraph::new(feed.as_ref())
+                .block(Block::default().title("Feed").borders(Borders::ALL));
+            f.render_widget(feed, vertical_chunks[0]);
+
             let input_box = Paragraph::new(input.as_ref())
                 .block(Block::default().title("Input").borders(Borders::ALL));
-            f.render_widget(input_box, chunks[1]);
+            f.render_widget(input_box, vertical_chunks[1]);
 
             let users = Block::default().title("Users").borders(Borders::ALL);
             f.render_widget(users, chunks[2]);
@@ -130,11 +144,7 @@ fn termui(sender: mpsc::Sender<String>) -> anyhow::Result<()> {
 fn chat_task(req_socket: zmq::Socket, receiver: mpsc::Receiver<String>) -> anyhow::Result<()> {
     let mut msg = zmq::Message::new();
 
-    loop {
-        let content = match receiver.recv() {
-            Ok(content) => content,
-            Err(_) => break,
-        };
+    while let Ok(content) = receiver.recv() {
         let message = MessageType::Message {
             name: "BOB".to_string(),
             channel: "A".to_string(),
@@ -155,7 +165,7 @@ fn print_task(sub_socket: zmq::Socket) -> anyhow::Result<()> {
     loop {
         sub_socket.recv_string(0)?.unwrap();
         sub_socket.recv(&mut msg, 0)?;
-        println!("Received: {}", msg.as_str().unwrap());
+        println!("Received: {:?}", msg.as_str());
     }
 }
 
