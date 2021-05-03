@@ -18,7 +18,7 @@ use tui::{
 };
 
 /// Messages to be serialized and sent to the server.
-#[derive(Clone, Debug, Deserialize, Serialize)]
+#[derive(Clone, Debug, Deserialize, Serialize, PartialEq)]
 #[serde(tag = "tag")]
 enum MessageType {
     /// Initial message sent when a client first connects.
@@ -236,4 +236,42 @@ fn main() -> anyhow::Result<()> {
     }
 
     Ok(())
+}
+
+#[cfg(test)]
+mod test {
+    #[test]
+    fn test_serialize_message() {
+        let message = crate::MessageType::Message {
+            name: "Sebern".into(),
+            channel: "A".into(),
+            content: "Heihei".into(),
+        };
+
+        let message =
+            serde_json::to_string(&message).expect("Serde failed to serialize MessageType::Mesage");
+
+        assert_eq!(
+            message,
+            "{\"tag\":\"Message\",\"name\":\"Sebern\",\"channel\":\"A\",\"content\":\"Heihei\"}"
+        );
+    }
+
+    #[test]
+    fn test_deserialize_message() {
+        let message: &str =
+            "{\"tag\":\"Message\",\"name\":\"Sebern\",\"channel\":\"A\",\"content\":\"Heihei\"}";
+
+        let message: crate::MessageType = serde_json::from_str(message)
+            .expect("Serde failed to deserialize MessageType::Message");
+
+        assert_eq!(
+            message,
+            crate::MessageType::Message {
+                name: "Sebern".into(),
+                channel: "A".into(),
+                content: "Heihei".into(),
+            }
+        );
+    }
 }
