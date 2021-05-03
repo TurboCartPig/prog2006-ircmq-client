@@ -1,12 +1,16 @@
-use clap::{Arg, App};
-
+use clap::{App, Arg};
 use crossterm::{
     event::{self, Event as CEvent, KeyCode},
     execute,
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
 use serde::{Deserialize, Serialize};
-use std::{io, sync::mpsc, thread, time::{Duration, Instant}, env};
+use std::{
+    io,
+    sync::mpsc,
+    thread,
+    time::{Duration, Instant},
+};
 use tui::{
     backend::CrosstermBackend,
     layout::{Constraint, Direction, Layout},
@@ -211,54 +215,58 @@ fn print_task(
 }
 
 fn main() -> anyhow::Result<()> {
-    let matches = App::new("Sebbern program")
-    .version("0.1.0")
-    .author("Sebbern")
-    .about("Sebbern Sebbern")
-    .arg(Arg::with_name("name")
-             .short("n")
-             .long("name")
-             .takes_value(true))
-    .arg(Arg::with_name("channel")
-             .short("c")
-             .long("channel")
-             .takes_value(true))
-    .arg(Arg::with_name("server")
-             .short("s")
-             .long("server")
-             .takes_value(true))
-    .get_matches();
+    // Setup cli options
+    let matches = App::new("IRCMQ Chat your life away")
+        .version("0.1.0")
+        .author("IRCMQ Boys")
+        .about("The only chat program you will ever need")
+        .arg(
+            Arg::with_name("name")
+                .short("n")
+                .long("name")
+                .takes_value(true),
+        )
+        .arg(
+            Arg::with_name("channel")
+                .short("c")
+                .long("channel")
+                .takes_value(true),
+        )
+        .arg(
+            Arg::with_name("server")
+                .short("s")
+                .long("server")
+                .takes_value(true),
+        )
+        .get_matches();
 
-    let name = matches.value_of("name").unwrap_or(" ");
-    println!("Name is: {}", name);
-    
-    let channel = matches.value_of("channel").unwrap_or(" ");
-    println!("Channel is: {}", channel);
-    
-    let server = matches.value_of("server").unwrap_or(" ");
-    println!("Server is: {}", server);
+    // Extracted config
+    let name = matches.value_of("name").unwrap_or("Sebern").to_string();
+    let channel = matches.value_of("channel").unwrap_or("A").to_string();
+    let server = matches
+        .value_of("server")
+        .unwrap_or("localhost")
+        .to_string();
 
+    // Create zmq context and sockets
     let context = zmq::Context::new();
-    let args: Vec<String> = env::args().collect();
 
     let (sender, receiver) = mpsc::channel();
     let (server_sender, server_receiver) = mpsc::channel();
 
     let req_socket = context.socket(zmq::REQ)?;
-    req_socket.connect("tcp://localhost:5555")?;
+    req_socket.connect(&format!("tcp://{}:5555", server))?;
 
     let sub_socket = context.socket(zmq::SUB)?;
-    sub_socket.set_subscribe(args[2].clone().as_ref())?;
-    sub_socket.connect("tcp://localhost:6666")?;
+    sub_socket.set_subscribe(channel.as_ref())?;
+    sub_socket.connect(&format!("tcp://{}:6666", server))?;
 
     let t1 = std::thread::spawn(move || chat_task(req_socket, receiver).unwrap());
     let t2 = std::thread::spawn(move || print_task(sub_socket, server_sender).unwrap());
 
-    termui(args[1].clone(),args[2].clone(),sender, server_receiver)?;
+    termui(name, channel, sender, server_receiver)?;
 
-    println!("Hei");
     t1.join().unwrap();
-    println!("Hei2");
     t2.join().unwrap();
 
     Ok(())
