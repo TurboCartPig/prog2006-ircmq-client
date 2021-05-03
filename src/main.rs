@@ -37,48 +37,56 @@ enum MessageType {
     Goodbye { name: String, channel: String },
 }
 
-enum Event<I> {
-    Input(I),
+/// TUI event
+enum Event {
+    /// Input event generated from the user pressing a key.
+    Input(crossterm::event::KeyEvent),
+    /// Tick event generated from the tick thread in order to regularily update the UI.
     Tick,
 }
 
+fn tick_task(tick_rate: Duration, event_sender: mpsc::Sender<Event>) -> ! {
+    let mut last_tick = Instant::now();
+    loop {
+        // Poll for tick rate duration, if no new events, send tick event.
+        let timeout = tick_rate
+            .checked_sub(last_tick.elapsed())
+            .unwrap_or_else(|| Duration::from_secs(0));
+        if event::poll(timeout).unwrap() {
+            if let CEvent::Key(key) = event::read().unwrap() {
+                event_sender.send(Event::Input(key)).unwrap();
+            }
+        }
+        if last_tick.elapsed() >= tick_rate {
+            event_sender.send(Event::Tick).unwrap();
+            last_tick = Instant::now();
+        }
+    }
+}
+
 fn termui(sender: mpsc::Sender<String>) -> anyhow::Result<()> {
+    // Enable raw mode for the terminal
     enable_raw_mode()?;
+
+    // Transistion the terminal from the main screen to the alternative screen
     let mut stdout = io::stdout();
     execute!(stdout, EnterAlternateScreen)?;
 
+    // Construct a Terminal abscraction from stdout
     let backend = CrosstermBackend::new(stdout);
     let mut terminal = Terminal::new(backend)?;
 
     // Setup input handling
-    let (tx, rx) = mpsc::channel();
-
+    let (event_sender, event_receiver) = mpsc::channel();
     let tick_rate = Duration::from_millis(100);
-    thread::spawn(move || {
-        let mut last_tick = Instant::now();
-        loop {
-            // poll for tick rate duration, if no events, sent tick event.
-            let timeout = tick_rate
-                .checked_sub(last_tick.elapsed())
-                .unwrap_or_else(|| Duration::from_secs(0));
-            if event::poll(timeout).unwrap() {
-                if let CEvent::Key(key) = event::read().unwrap() {
-                    tx.send(Event::Input(key)).unwrap();
-                }
-            }
-            if last_tick.elapsed() >= tick_rate {
-                tx.send(Event::Tick).unwrap();
-                last_tick = Instant::now();
-            }
-        }
-    });
+    thread::spawn(move || tick_task(tick_rate, event_sender));
 
     let feed = String::from("This is a chat feed");
     let mut input = String::new();
 
     loop {
         // Block on event input, either a tick to refresh the UI, or an input event from the user
-        match rx.recv()? {
+        match event_receiver.recv()? {
             Event::Input(ev) => match ev.code {
                 KeyCode::Esc => {
                     break;
@@ -135,6 +143,7 @@ fn termui(sender: mpsc::Sender<String>) -> anyhow::Result<()> {
         })?;
     }
 
+    // Disable raw mode for the terminal, and switch back to the main screen
     disable_raw_mode()?;
     execute!(terminal.backend_mut(), LeaveAlternateScreen)?;
 
