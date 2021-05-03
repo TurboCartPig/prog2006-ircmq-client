@@ -13,7 +13,7 @@ use std::{
 use tui::{
     backend::CrosstermBackend,
     layout::{Constraint, Direction, Layout},
-    widgets::{Block, Borders, Paragraph, Widget},
+    widgets::{Block, Borders, Paragraph},
     Terminal,
 };
 
@@ -64,7 +64,10 @@ fn tick_task(tick_rate: Duration, event_sender: mpsc::Sender<Event>) -> ! {
     }
 }
 
-fn termui(sender: mpsc::Sender<String>) -> anyhow::Result<()> {
+fn termui(
+    sender: mpsc::Sender<String>,
+    server_receiver: mpsc::Receiver<MessageType>,
+) -> anyhow::Result<()> {
     // Enable raw mode for the terminal
     enable_raw_mode()?;
 
@@ -81,7 +84,7 @@ fn termui(sender: mpsc::Sender<String>) -> anyhow::Result<()> {
     let tick_rate = Duration::from_millis(100);
     thread::spawn(move || tick_task(tick_rate, event_sender));
 
-    let feed = String::from("This is a chat feed");
+    let mut feed = String::new();
     let mut input = String::new();
 
     loop {
@@ -104,6 +107,18 @@ fn termui(sender: mpsc::Sender<String>) -> anyhow::Result<()> {
                 _ => {}
             },
             Event::Tick => {}
+        }
+
+        // Pull new messages from the server, ignore any errors
+        while let Ok(MessageType::Message {
+            name,
+            channel,
+            content,
+        }) = server_receiver.try_recv()
+        {
+            feed.push_str(&format!("{} -> ", name));
+            feed.push_str(&content);
+            feed.push('\n');
         }
 
         // Draw the TUI
@@ -168,13 +183,15 @@ fn chat_task(req_socket: zmq::Socket, receiver: mpsc::Receiver<String>) -> anyho
     Ok(())
 }
 
-fn print_task(sub_socket: zmq::Socket) -> anyhow::Result<()> {
-    let mut msg = zmq::Message::new();
-
+fn print_task(
+    sub_socket: zmq::Socket,
+    server_sender: mpsc::Sender<MessageType>,
+) -> anyhow::Result<()> {
     loop {
-        sub_socket.recv_string(0)?.unwrap();
-        sub_socket.recv(&mut msg, 0)?;
-        println!("Received: {:?}", msg.as_str());
+        let _ = sub_socket.recv_string(0)?.unwrap();
+        let message = sub_socket.recv_string(0)?.unwrap();
+        let message = serde_json::from_str(&message)?;
+        server_sender.send(message)?;
     }
 }
 
@@ -200,6 +217,7 @@ fn main() -> anyhow::Result<()> {
         }
     } else {
         let (sender, receiver) = mpsc::channel();
+        let (server_sender, server_receiver) = mpsc::channel();
 
         let req_socket = context.socket(zmq::REQ)?;
         req_socket.connect("tcp://localhost:5555")?;
@@ -209,12 +227,12 @@ fn main() -> anyhow::Result<()> {
         sub_socket.connect("tcp://localhost:6666")?;
 
         let t1 = std::thread::spawn(move || chat_task(req_socket, receiver).unwrap());
-        // let t2 = std::thread::spawn(move || print_task(sub_socket).unwrap());
+        let t2 = std::thread::spawn(move || print_task(sub_socket, server_sender).unwrap());
 
-        termui(sender)?;
+        termui(sender, server_receiver)?;
 
         t1.join().unwrap();
-        // t2.join().unwrap();
+        t2.join().unwrap();
     }
 
     Ok(())
