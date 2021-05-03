@@ -261,13 +261,10 @@ fn main() -> anyhow::Result<()> {
     sub_socket.set_subscribe(channel.as_ref())?;
     sub_socket.connect(&format!("tcp://{}:6666", server))?;
 
-    let t1 = std::thread::spawn(move || chat_task(req_socket, receiver).unwrap());
-    let t2 = std::thread::spawn(move || print_task(sub_socket, server_sender).unwrap());
+    std::thread::spawn(move || chat_task(req_socket, receiver).unwrap());
+    std::thread::spawn(move || print_task(sub_socket, server_sender).unwrap());
 
     termui(name, channel, sender, server_receiver)?;
-
-    t1.join().unwrap();
-    t2.join().unwrap();
 
     Ok(())
 }
