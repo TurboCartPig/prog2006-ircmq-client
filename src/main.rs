@@ -4,12 +4,7 @@ use crossterm::{
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
 use serde::{Deserialize, Serialize};
-use std::{
-    io,
-    sync::mpsc,
-    thread,
-    time::{Duration, Instant},
-};
+use std::{io, sync::mpsc, thread, time::{Duration, Instant}, env};
 use tui::{
     backend::CrosstermBackend,
     layout::{Constraint, Direction, Layout},
@@ -70,6 +65,8 @@ fn tick_task(tick_rate: Duration, event_sender: mpsc::Sender<Event>) {
 
 // Some of this was yanked from the tui-rs examples
 fn termui(
+    name: String,
+    channel: String,
     sender: mpsc::Sender<MessageType>,
     server_receiver: mpsc::Receiver<MessageType>,
 ) -> anyhow::Result<()> {
@@ -91,7 +88,7 @@ fn termui(
 
     let mut feed = String::new();
     let mut input = String::new();
-    let users = vec![String::from("Sebern")];
+    let users = vec![name.clone()];
 
     loop {
         // Block on event input, either a tick to refresh the UI, or an input event from the user
@@ -101,14 +98,10 @@ fn termui(
                     break;
                 }
                 KeyCode::Enter => {
-                    // TODO: Take these as input
-                    let name = String::from("Sebern");
-                    let channel = String::from("A");
-
                     let content: String = input.drain(..).collect();
                     let message = MessageType::Message {
-                        name,
-                        channel,
+                        name: name.clone(),
+                        channel: channel.clone(),
                         content,
                     };
                     sender.send(message)?;
@@ -210,6 +203,7 @@ fn print_task(
 
 fn main() -> anyhow::Result<()> {
     let context = zmq::Context::new();
+    let args: Vec<String> = env::args().collect();
 
     let (sender, receiver) = mpsc::channel();
     let (server_sender, server_receiver) = mpsc::channel();
@@ -218,13 +212,13 @@ fn main() -> anyhow::Result<()> {
     req_socket.connect("tcp://localhost:5555")?;
 
     let sub_socket = context.socket(zmq::SUB)?;
-    sub_socket.set_subscribe(b"A")?;
+    sub_socket.set_subscribe(args[2].clone().as_ref())?;
     sub_socket.connect("tcp://localhost:6666")?;
 
     let t1 = std::thread::spawn(move || chat_task(req_socket, receiver).unwrap());
     let t2 = std::thread::spawn(move || print_task(sub_socket, server_sender).unwrap());
 
-    termui(sender, server_receiver)?;
+    termui(args[1].clone(),args[2].clone(),sender, server_receiver)?;
 
     println!("Hei");
     t1.join().unwrap();
