@@ -8,11 +8,13 @@ stages:
 # Define a persistent cache
 .rust-cache:
   variables:
-    CARGO_TARGET_DIR: "$CI_PROJECT_DIR/.target"
+    CARGO_HOME: "$CI_PROJECT_DIR/.cargo/"
+    CARGO_TARGET_DIR: "$CI_PROJECT_DIR/.target/"
   cache:
     key: rust-cache
     paths:
-      - "$CI_PROJECT_DIR/.target"
+      - "$CI_PROJECT_DIR/.cargo/"
+      - "$CI_PROJECT_DIR/.target/"
 
 before_script:
   - apt-get update
