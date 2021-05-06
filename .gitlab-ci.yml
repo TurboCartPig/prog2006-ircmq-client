@@ -1,0 +1,34 @@
+image: rust:1.51
+
+# Define our stages
+stages:
+  - build
+  - test
+
+# Define a persistent cache
+.rust-cache:
+  variables:
+    CARGO_TARGET_DIR: "$CI_PROJECT_DIR/.target"
+  cache:
+    key: rust-cache
+    paths:
+      - "$CI_PROJECT_DIR/.target"
+
+before_script:
+  - apt-get update
+  - apt-get install cmake -y
+  - rustup component add clippy
+
+build:
+  stage: build
+  extends: .rust-cache
+  script:
+    - cargo build --locked --verbose
+    - cargo clippy --locked --verbose
+
+test:
+  stage: test
+  extends: .rust-cache
+  needs: ["build"]
+  script:
+    - cargo test --locked --verbose
