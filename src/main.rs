@@ -1,9 +1,9 @@
 mod client;
 mod message;
-mod terminalui;
+mod ui;
 
 use crate::client::*;
-use crate::terminalui::*;
+use crate::ui::*;
 use clap::{App, Arg};
 
 fn main() -> anyhow::Result<()> {
@@ -32,7 +32,7 @@ fn main() -> anyhow::Result<()> {
         )
         .get_matches();
 
-    // Extracted config
+    // Extract config
     let name = matches.value_of("name").unwrap_or("Sebern").to_string();
     let channel = matches.value_of("channel").unwrap_or("A").to_string();
     let server = matches

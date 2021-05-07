@@ -1,3 +1,10 @@
+//! This module deals with drawing a terminal UI, based on dynamic data,
+//! like the state of the input field, the users in the channel, and so on.
+//!
+//! # Credits
+//! Almost everything in this module is based on the excellent tui-rs examples provided at their
+//! main repo.
+
 use crate::message::*;
 use crossterm::{
     event::{self, Event as CEvent, KeyCode},
@@ -26,7 +33,6 @@ enum Event {
 }
 
 /// Generate tick and input events for the TUI.
-// This was yanked from the tui-rs examples
 fn tick_task(tick_rate: Duration, event_sender: mpsc::Sender<Event>) {
     let mut last_tick = Instant::now();
     loop {
@@ -111,7 +117,6 @@ fn draw_ui(
 }
 
 /// Run the TUI and process user input, until ESC is pressed.
-// Some of this was yanked from the tui-rs examples
 pub fn termui(
     name: String,
     channel: String,
