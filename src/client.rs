@@ -1,8 +1,11 @@
-use std::sync::mpsc;
 use crate::message::*;
+use std::sync::mpsc;
 
 /// Send messages to the server and process replies.
-pub fn chat_task(req_socket: zmq::Socket, receiver: mpsc::Receiver<MessageType>) -> anyhow::Result<()> {
+pub fn chat_task(
+    req_socket: zmq::Socket,
+    receiver: mpsc::Receiver<MessageType>,
+) -> anyhow::Result<()> {
     let mut msg = zmq::Message::new();
 
     while let Ok(message) = receiver.recv() {
@@ -41,8 +44,8 @@ pub fn create_sockets(
     // Create zmq context and sockets
     let context = zmq::Context::new();
 
-    let (sender, receiver) = mpsc::channel();
-    let (server_sender, server_receiver) = mpsc::channel();
+    let (to_server_sender, to_server_receiver) = mpsc::channel();
+    let (from_server_sender, from_server_receiver) = mpsc::channel();
 
     let req_socket = context.socket(zmq::REQ)?;
     req_socket.connect(&format!("tcp://{}:5555", server))?;
@@ -51,8 +54,8 @@ pub fn create_sockets(
     sub_socket.set_subscribe(channel.as_ref())?;
     sub_socket.connect(&format!("tcp://{}:6666", server))?;
 
-    std::thread::spawn(move || chat_task(req_socket, receiver).unwrap());
-    std::thread::spawn(move || feed_task(sub_socket, server_sender).unwrap());
+    std::thread::spawn(move || chat_task(req_socket, to_server_receiver).unwrap());
+    std::thread::spawn(move || feed_task(sub_socket, from_server_sender).unwrap());
 
-    Ok((sender, server_receiver))
+    Ok((to_server_sender, from_server_receiver))
 }

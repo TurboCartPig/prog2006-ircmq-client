@@ -40,9 +40,9 @@ fn main() -> anyhow::Result<()> {
         .unwrap_or("localhost")
         .to_string();
 
-    let (sender, server_receiver) = create_sockets(&channel, &server)?;
+    let (to_server, from_server) = create_sockets(&channel, &server)?;
 
-    termui(name, channel, sender, server_receiver)?;
+    termui(name, channel, to_server, from_server)?;
 
     Ok(())
 }

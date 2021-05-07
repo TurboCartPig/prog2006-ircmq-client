@@ -120,8 +120,8 @@ fn draw_ui(
 pub fn termui(
     name: String,
     channel: String,
-    sender: mpsc::Sender<MessageType>,
-    server_receiver: mpsc::Receiver<MessageType>,
+    to_server: mpsc::Sender<MessageType>,
+    from_server: mpsc::Receiver<MessageType>,
 ) -> anyhow::Result<()> {
     // Enable raw mode for the terminal
     enable_raw_mode()?;
@@ -159,7 +159,7 @@ pub fn termui(
                         channel: channel.clone(),
                         content,
                     };
-                    sender.send(message)?;
+                    to_server.send(message)?;
                 }
                 KeyCode::Backspace => {
                     input.pop();
@@ -173,7 +173,7 @@ pub fn termui(
         }
 
         // Pull new messages from the server, ignore any errors
-        while let Ok(MessageType::Message { name, content, .. }) = server_receiver.try_recv() {
+        while let Ok(MessageType::Message { name, content, .. }) = from_server.try_recv() {
             feed.push_str(&format!("{} -> {}\n", name, content));
         }
 
