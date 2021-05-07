@@ -1,4 +1,4 @@
-image: rust:1.51
+image: rust:1.52
 
 # Define our stages
 stages:
