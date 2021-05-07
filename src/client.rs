@@ -8,11 +8,36 @@ pub fn chat_task(
 ) -> anyhow::Result<()> {
     let mut msg = zmq::Message::new();
 
+    let name = "Bob".to_string();
+    let channel = "Channel".to_string();
+
+    // Send hello message, notifying the server
+    // that the client is connecting.
+    let hello = MessageType::Hello {
+        name: name.clone(),
+        channel: channel.clone(),
+    };
+    let hello = serde_json::to_string(&hello)?;
+    req_socket.send(&hello, 0)?;
+    req_socket.recv(&mut msg, 0)?;
+
+    // TODO: Get list of other users in the same channel
+    // TODO: Get list of channels on the server
+
+    // Forward any message we reveive to the server,
+    // until the channel is closed.
     while let Ok(message) = receiver.recv() {
-        let message_string = serde_json::to_string(&message)?;
-        req_socket.send(&message_string, 0)?;
+        let message = serde_json::to_string(&message)?;
+        req_socket.send(&message, 0)?;
         req_socket.recv(&mut msg, 0)?;
     }
+
+    // Send goodbye message, notifying the server
+    // that the client is leaving.
+    let goodbye = MessageType::Goodbye { name, channel };
+    let goodbye = serde_json::to_string(&goodbye)?;
+    req_socket.send(&goodbye, 0)?;
+    req_socket.recv(&mut msg, 0)?;
 
     Ok(())
 }
@@ -40,7 +65,12 @@ pub fn feed_task(
 pub fn create_sockets(
     channel: &str,
     server: &str,
-) -> anyhow::Result<(mpsc::Sender<MessageType>, mpsc::Receiver<MessageType>)> {
+) -> anyhow::Result<(
+    mpsc::Sender<MessageType>,
+    mpsc::Receiver<MessageType>,
+    impl FnOnce(),
+    impl FnOnce(),
+)> {
     // Create zmq context and sockets
     let context = zmq::Context::new();
 
@@ -54,8 +84,8 @@ pub fn create_sockets(
     sub_socket.set_subscribe(channel.as_ref())?;
     sub_socket.connect(&format!("tcp://{}:6666", server))?;
 
-    std::thread::spawn(move || chat_task(req_socket, to_server_receiver).unwrap());
-    std::thread::spawn(move || feed_task(sub_socket, from_server_sender).unwrap());
+    let t1 = move || chat_task(req_socket, to_server_receiver).unwrap();
+    let t2 = move || feed_task(sub_socket, from_server_sender).unwrap();
 
-    Ok((to_server_sender, from_server_receiver))
+    Ok((to_server_sender, from_server_receiver, t1, t2))
 }

@@ -5,6 +5,7 @@
 //! Almost everything in this module is based on the excellent tui-rs examples provided at their
 //! main repo.
 
+use crate::client::*;
 use crate::message::*;
 use crossterm::{
     event::{self, Event as CEvent, KeyCode},
@@ -117,12 +118,7 @@ fn draw_ui(
 }
 
 /// Run the TUI and process user input, until ESC is pressed.
-pub fn termui(
-    name: String,
-    channel: String,
-    to_server: mpsc::Sender<MessageType>,
-    from_server: mpsc::Receiver<MessageType>,
-) -> anyhow::Result<()> {
+pub fn termui(name: String, channel: String, server: String) -> anyhow::Result<()> {
     // Enable raw mode for the terminal
     enable_raw_mode()?;
 
@@ -134,14 +130,20 @@ pub fn termui(
     let backend = CrosstermBackend::new(stdout);
     let mut terminal = Terminal::new(backend)?;
 
-    // Setup input handling
+    // Create the server <-> client sockets and spawn threads that poll on them
+    let (to_server, from_server, t1, t2) = create_sockets(&channel, &server)?;
+    let chat_thread = thread::spawn(t1);
+    thread::spawn(t2);
+
+    // Setup a thread to handle input events from the user
+    // The thread also generates tick events to refresh the UI
     let (event_sender, event_receiver) = mpsc::channel();
     let tick_rate = Duration::from_millis(100);
     thread::spawn(move || tick_task(tick_rate, event_sender));
 
+    // Data that drives the UI
     let mut feed = String::new();
     let mut input = String::new();
-
     let users = vec![name.clone()];
     let channels = vec![channel.clone()];
 
@@ -179,6 +181,10 @@ pub fn termui(
 
         draw_ui(&mut terminal, &channels, &users, &feed, &input)?;
     }
+
+    // Wait for the thread to send the goodbye message,
+    // that was initiated by the channel closing.
+    chat_thread.join().unwrap();
 
     // Disable raw mode for the terminal, and switch back to the main screen
     disable_raw_mode()?;

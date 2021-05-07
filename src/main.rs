@@ -2,7 +2,6 @@ mod client;
 mod message;
 mod ui;
 
-use crate::client::*;
 use crate::ui::*;
 use clap::{App, Arg};
 
@@ -40,9 +39,7 @@ fn main() -> anyhow::Result<()> {
         .unwrap_or("localhost")
         .to_string();
 
-    let (to_server, from_server) = create_sockets(&channel, &server)?;
-
-    termui(name, channel, to_server, from_server)?;
+    termui(name, channel, server)?;
 
     Ok(())
 }
