@@ -59,6 +59,7 @@ git clone https://git.gvk.idi.ntnu.no/course/prog2006/as/denniskr/ircmq-boys/cli
     ```
   - Paste it into your shell and press Enter
   - If no errors appear, you are ready to use **Chocolatey**. Test it with `choco` command in the shell.
+  
 - To install Rust (GNU ABI), run the following command from the command line or from PowerShell:
 
   ```
