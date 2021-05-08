@@ -25,8 +25,6 @@ As this is a somewhat advanced terminal user interface, it has some requirements
 
 - [ ] Windows PowerShell (builtin) - Not compatible
 
-- [ ] Other windows terminals - Not tested
-
 - [x] GNOME Terminal - Compatible
 
 - [x] Alacritty - Compatible
