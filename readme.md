@@ -35,7 +35,7 @@ As this is a somewhat advanced terminal user interface, it has some requirements
 
 [x] - Other linux terminals - Not tested (you should use alacritty anyway)
 
-[?] - MacOS terminals - Not tested
+[x] - MacOS terminals - works for default terminal
 
 ## Instructions
 
