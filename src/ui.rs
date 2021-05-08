@@ -183,10 +183,10 @@ pub fn termui(name: String, channel: String, server: String) -> anyhow::Result<(
         while let Ok(message) = from_server.try_recv() {
             match message {
                 MessageType::Hello { name, .. } => {
-                    feed.push_str(&format!("{} joins the channel\n", name));
+                    feed.push_str(&format!("{} joined the channel\n", name));
                 }
                 MessageType::Goodbye { name, .. } => {
-                    feed.push_str(&format!("{} leaves the channel\n", name));
+                    feed.push_str(&format!("{} left the channel\n", name));
                 }
                 MessageType::Message { name, content, .. } => {
                     feed.push_str(&format!("{} -> {}\n", name, content))
