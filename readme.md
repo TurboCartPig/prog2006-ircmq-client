@@ -27,8 +27,6 @@ As this is a somewhat advanced terminal user interface, it has some requirements
 
 - [ ] Windows PowerShell (builtin) - Not compatible
 
-- [ ] Other windows terminals - Not tested
-
 - [x] GNOME Terminal - Compatible
 
 - [x] Alacritty - Compatible
@@ -47,35 +45,16 @@ As this is a somewhat advanced terminal user interface, it has some requirements
 git clone https://git.gvk.idi.ntnu.no/course/prog2006/as/denniskr/ircmq-boys/client-rust.git
 ```
 
-### Installation instructions - Windows
+### Installation - Windows
 
 **source:** https://forge.rust-lang.org/infra/other-installation-methods.html
-
-**sourde:** https://chocolatey.org/install
-
-- Download and configure Chocolatey
-  - Using administrative shell
-  - Copy and run the following command
-    ```
-      Set-ExecutionPolicy Bypass -Scope Process -Force; [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; iex ((New-Object System.Net.WebClient).DownloadString('https://chocolatey.org/install.ps1'))
-    ```
-  - Paste it into your shell and press Enter
-  - If no errors appear, you are ready to use **Chocolatey**. Test it with `choco` command in the shell.
-  
-- To install Rust (GNU ABI), run the following command from the command line or from PowerShell:
-
-  ```
-  choco install rust
-  ```
-
-  **To install Rust with an installer**
 
 - Download the installer from
   ```
   https://static.rust-lang.org/rustup/dist/i686-pc-windows-gnu/rustup-init.exe
   ```
 
-### Installation instructions - Linux/MacOS
+### Installation - Linux/MacOS
 
 source: https://www.rust-lang.org/tools/install
 
@@ -95,7 +74,7 @@ If you want more information about other installation methods, go to:
 
 https://forge.rust-lang.org/infra/other-installation-methods.html
 
-### Run the client
+## Run the client
 
 **Inside the project directory**
 
@@ -108,19 +87,26 @@ cargo build
 * Run with arguments (all arguments are optional, see `--help` for more):
 
 ```
-cargo run -- --name Sebern --channel Rust --server localhost
+cargo run -- --name Sebbern --channel Rust --server localhost
 ```
 
-### Documentation
+## Documentation
 
 cargo dock is the standard documentation tool for a rust project. To generate the documentation, with cargo installed, you can run:
 
 ```
-cargo dock
+cargo doc
 ```
 
 You can also open the documentation right away, after generating, with:
 ```
-cargo dock --open
+cargo doc --open
 ```
 
+## Testing
+
+You can run tests in the project with:
+
+```
+cargo test
+```

@@ -12,12 +12,8 @@ pub enum MessageType {
         channel: String,
         content: String,
     },
-    /// Request a list of members of the current channel.
-    RequestMembers { channel: String },
     /// Response from the server, containing a list of members of the current channel.
     ResponseMembers { members: Vec<String> },
-    /// Request a list of all the channels on the current server.
-    RequestChannels,
     /// Response from the server, containing a list of channels on the server.
     ResponseChannels { channels: Vec<String> },
     /// Final message from client to server, notifying the server, that the client is disconnecting.
