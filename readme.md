@@ -4,38 +4,38 @@ This is a client for IRCMQ, a clone of IRC, based on ZeroMQ, built in Rust.
 
 ## Features
 
-[x] - Users -> Multiple users can enter a channel.
+- [x] Users -> Multiple users can enter a channel.
 
-[x] - Channels -> Multiple channels can be created, joined and chatted in.
+- [x] Channels -> Multiple channels can be created, joined and chatted in.
 
-[x] - Servers -> Multiple servers can run and you can connect to one of them at a time.
+- [x] Servers -> Multiple servers can run and you can connect to one of them at a time.
 
-[x] - TUI -> A terminal based UI based on TUI-rs.
+- [x] TUI -> A terminal based UI based on TUI-rs.
 
-[x] - ZeroMQ -> JSON messages over ZeroMQ sockets makes for a robust and extensible core.
+- [x] ZeroMQ -> JSON messages over ZeroMQ sockets makes for a robust and extensible core.
 
 
 ## Compatibility
 
 As this is a somewhat advanced terminal user interface, it has some requirements to the terminal running it. We have tested the following terminals for compatibility.
 
-[x] - cmd - Compatible
+- [x] cmd - Compatible
 
-[x] - Windows Terminal - Compatible
+- [x] Windows Terminal - Compatible
 
-[_] - Windows PowerShell (builtin) - Not compatible
+- [ ] Windows PowerShell (builtin) - Not compatible
 
-[?] - Other windows terminals - Not tested
+- [ ] Other windows terminals - Not tested
 
-[x] - GNOME Terminal - Compatible
+- [x] GNOME Terminal - Compatible
 
-[x] - Alacritty - Compatible
+- [x] Alacritty - Compatible
 
-[x] - Kitty - Compatible
+- [x] Kitty - Compatible
 
-[x] - Other linux terminals - Not tested (you should use alacritty anyway)
+- [x] Other linux terminals - Not tested (you should use alacritty anyway)
 
-[x] - MacOS terminals - works for default terminal
+- [x] MacOS terminals - works for default terminal
 
 ## Instructions
 
