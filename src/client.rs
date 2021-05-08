@@ -21,18 +21,6 @@ pub fn chat_task(
     req_socket.send(&hello, 0)?;
     req_socket.recv(&mut msg, 0)?;
 
-    // TODO: Get list of other users in the same channel
-    // TODO: Get list of channels on the server
-
-    // Request members of the channel we are joining
-    // let req = MessageType::RequestMembers {
-    //     channel: channel.clone(),
-    // };
-    // let req = serde_json::to_string(&req)?;
-    // req_socket.send(&req, 0)?;
-    // let res = req_socket.recv_string(0)?.unwrap();
-    // println!("Res: {}", res);
-
     // Forward any message we receive to the server,
     // until the channel is closed.
     while let Ok(message) = receiver.recv() {
