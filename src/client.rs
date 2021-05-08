@@ -44,10 +44,17 @@ pub fn feed_task(
     sub_socket: zmq::Socket,
     server_sender: mpsc::Sender<MessageType>,
 ) -> anyhow::Result<()> {
+    let mut msg = zmq::Message::new();
+
+    // Block on listening to messages from server
     loop {
-        let _ = sub_socket.recv_string(0)?.unwrap();
-        let message = sub_socket.recv_string(0)?.unwrap();
-        let message = serde_json::from_str(&message).context("Failed to deserialize message")?;
+        sub_socket.recv(&mut msg, 0)?;
+        sub_socket.recv(&mut msg, 0)?;
+        let message = serde_json::from_str(
+            msg.as_str()
+                .expect("Failed to convert zmq message to string"),
+        )
+        .context("Failed to deserialize message")?;
 
         // If the channel has closed, quit
         if server_sender.send(message).is_err() {
