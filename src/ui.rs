@@ -7,6 +7,7 @@
 
 use crate::client::*;
 use crate::message::*;
+use anyhow::Context;
 use crossterm::{
     event::{self, Event as CEvent, KeyCode},
     execute,
@@ -124,14 +125,15 @@ pub fn termui(name: String, channel: String, server: String) -> anyhow::Result<(
 
     // Transition the terminal from the main screen to the alternative screen
     let mut stdout = io::stdout();
-    execute!(stdout, EnterAlternateScreen)?;
+    execute!(stdout, EnterAlternateScreen).context("Failed to enter alternate screen")?;
 
     // Construct a Terminal abstraction from stdout
     let backend = CrosstermBackend::new(stdout);
-    let mut terminal = Terminal::new(backend)?;
+    let mut terminal = Terminal::new(backend).context("Failed to create terminal abstraction")?;
 
     // Create the server <-> client sockets and spawn threads that poll on them
-    let (to_server, from_server, t1, t2) = create_sockets(name.clone(), channel.clone(), &server)?;
+    let (to_server, from_server, t1, t2) = create_sockets(name.clone(), channel.clone(), &server)
+        .context("Failed to create zmq sockets")?;
     let chat_thread = thread::spawn(t1);
     thread::spawn(t2);
 
@@ -195,12 +197,13 @@ pub fn termui(name: String, channel: String, server: String) -> anyhow::Result<(
             }
         }
 
-        draw_ui(&mut terminal, &channels, &users, &feed, &input)?;
+        draw_ui(&mut terminal, &channels, &users, &feed, &input).context("Failed to draw UI")?;
     }
 
     // Disable raw mode for the terminal, and switch back to the main screen
-    disable_raw_mode()?;
-    execute!(terminal.backend_mut(), LeaveAlternateScreen)?;
+    disable_raw_mode().context("Failed to disable raw mode")?;
+    execute!(terminal.backend_mut(), LeaveAlternateScreen)
+        .context("Failed to leave alternate screen")?;
 
     // Wait for the thread to send the goodbye message,
     // that was initiated by the channel closing.

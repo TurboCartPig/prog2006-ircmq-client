@@ -3,6 +3,7 @@ mod message;
 mod ui;
 
 use crate::ui::*;
+use anyhow::Context;
 use clap::{App, Arg};
 
 fn main() -> anyhow::Result<()> {
@@ -39,7 +40,7 @@ fn main() -> anyhow::Result<()> {
         .unwrap_or("localhost")
         .to_string();
 
-    termui(name, channel, server)?;
+    termui(name, channel, server).context("Failed to run UI")?;
 
     Ok(())
 }
