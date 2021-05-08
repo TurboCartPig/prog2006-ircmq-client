@@ -144,8 +144,11 @@ pub fn termui(name: String, channel: String, server: String) -> anyhow::Result<(
     // Data that drives the UI
     let mut feed = String::new();
     let mut input = String::new();
-    let users = vec![name.clone()];
-    let channels = vec![channel.clone()];
+
+    // FIXME: Request for users and channels should be done here instead of whatever spaghetti is
+    // setup currently
+    let mut users = vec![name.clone()];
+    let mut channels = vec![channel.clone()];
 
     loop {
         // Block on event input, either a tick to refresh the UI, or an input event from the user
@@ -175,20 +178,33 @@ pub fn termui(name: String, channel: String, server: String) -> anyhow::Result<(
         }
 
         // Pull new messages from the server, ignore any errors
-        while let Ok(MessageType::Message { name, content, .. }) = from_server.try_recv() {
-            feed.push_str(&format!("{} -> {}\n", name, content));
+        while let Ok(message) = from_server.try_recv() {
+            match message {
+                MessageType::Message { name, content, .. } => {
+                    feed.push_str(&format!("{} -> {}\n", name, content))
+                }
+                MessageType::ResponseMembers { members } => {
+                    users = members;
+                }
+                MessageType::ResponseChannels {
+                    channels: available,
+                } => {
+                    channels = available;
+                }
+                _ => {} // Ignore messages that are not for us
+            }
         }
 
         draw_ui(&mut terminal, &channels, &users, &feed, &input)?;
     }
 
-    // Wait for the thread to send the goodbye message,
-    // that was initiated by the channel closing.
-    chat_thread.join().unwrap();
-
     // Disable raw mode for the terminal, and switch back to the main screen
     disable_raw_mode()?;
     execute!(terminal.backend_mut(), LeaveAlternateScreen)?;
+
+    // Wait for the thread to send the goodbye message,
+    // that was initiated by the channel closing.
+    // chat_thread.join().unwrap();
 
     Ok(())
 }
