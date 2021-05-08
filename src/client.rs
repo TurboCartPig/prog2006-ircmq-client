@@ -90,6 +90,7 @@ pub fn create_sockets(
     req_socket.connect(&format!("tcp://{}:5555", server))?;
 
     let sub_socket = context.socket(zmq::SUB)?;
+    sub_socket.set_subscribe(b"broadcast")?;
     sub_socket.set_subscribe(channel.as_ref())?;
     sub_socket.connect(&format!("tcp://{}:6666", server))?;
 
