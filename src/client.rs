@@ -32,7 +32,7 @@ pub fn chat_task(
     // let res = req_socket.recv_string(0)?.unwrap();
     // println!("Res: {}", res);
 
-    // Forward any message we reveive to the server,
+    // Forward any message we receive to the server,
     // until the channel is closed.
     while let Ok(message) = receiver.recv() {
         let message = serde_json::to_string(&message)?;
