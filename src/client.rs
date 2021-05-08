@@ -3,13 +3,12 @@ use std::sync::mpsc;
 
 /// Send messages to the server and process replies.
 pub fn chat_task(
+    name: String,
+    channel: String,
     req_socket: zmq::Socket,
     receiver: mpsc::Receiver<MessageType>,
 ) -> anyhow::Result<()> {
     let mut msg = zmq::Message::new();
-
-    let name = "Bob".to_string();
-    let channel = "Channel".to_string();
 
     // Send hello message, notifying the server
     // that the client is connecting.
@@ -23,6 +22,15 @@ pub fn chat_task(
 
     // TODO: Get list of other users in the same channel
     // TODO: Get list of channels on the server
+
+    // Request members of the channel we are joining
+    // let req = MessageType::RequestMembers {
+    //     channel: channel.clone(),
+    // };
+    // let req = serde_json::to_string(&req)?;
+    // req_socket.send(&req, 0)?;
+    // let res = req_socket.recv_string(0)?.unwrap();
+    // println!("Res: {}", res);
 
     // Forward any message we reveive to the server,
     // until the channel is closed.
@@ -63,7 +71,8 @@ pub fn feed_task(
 
 /// Create the ZMQ sockets and spawn the processing tasks associated with them.
 pub fn create_sockets(
-    channel: &str,
+    name: String,
+    channel: String,
     server: &str,
 ) -> anyhow::Result<(
     mpsc::Sender<MessageType>,
@@ -84,7 +93,7 @@ pub fn create_sockets(
     sub_socket.set_subscribe(channel.as_ref())?;
     sub_socket.connect(&format!("tcp://{}:6666", server))?;
 
-    let t1 = move || chat_task(req_socket, to_server_receiver).unwrap();
+    let t1 = move || chat_task(name, channel, req_socket, to_server_receiver).unwrap();
     let t2 = move || feed_task(sub_socket, from_server_sender).unwrap();
 
     Ok((to_server_sender, from_server_receiver, t1, t2))

@@ -131,7 +131,7 @@ pub fn termui(name: String, channel: String, server: String) -> anyhow::Result<(
     let mut terminal = Terminal::new(backend)?;
 
     // Create the server <-> client sockets and spawn threads that poll on them
-    let (to_server, from_server, t1, t2) = create_sockets(&channel, &server)?;
+    let (to_server, from_server, t1, t2) = create_sockets(name.clone(), channel.clone(), &server)?;
     let chat_thread = thread::spawn(t1);
     thread::spawn(t2);
 
