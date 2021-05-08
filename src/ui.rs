@@ -162,8 +162,6 @@ pub fn termui(name: String, channel: String, server: String) -> anyhow::Result<(
     let mut feed = Vec::<(String,String)>::new();
     let mut input = String::new();
 
-    // FIXME: Request for users and channels should be done here instead of whatever spaghetti is
-    // setup currently
     let mut users = vec![name.clone()];
     let mut channels = vec![channel.clone()];
 
