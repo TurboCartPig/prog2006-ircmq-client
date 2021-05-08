@@ -99,6 +99,7 @@ fn draw_ui(
         // Draw the main message feed
         let feed: Vec<_> = feed
             .iter()
+            .rev()
             .map(|(text,level)| {
                 let s = match level.as_str() {
                     "WELCOME" => Style::default().fg(Color::Green),
