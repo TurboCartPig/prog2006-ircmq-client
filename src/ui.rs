@@ -22,8 +22,8 @@ use std::{
 use tui::{
     backend::CrosstermBackend,
     layout::{Constraint, Direction, Layout},
+    style::{Color, Style},
     widgets::{Block, Borders, List, ListItem, Paragraph},
-    style::{Color,Style},
     Terminal,
 };
 
@@ -62,7 +62,7 @@ fn draw_ui(
     terminal: &mut Terminal<CrosstermBackend<std::io::Stdout>>,
     channels: &[String],
     users: &[String],
-    feed: &[(String,String)],
+    feed: &[(String, String)],
     input: &str,
 ) -> anyhow::Result<()> {
     terminal.draw(|f| {
@@ -100,7 +100,7 @@ fn draw_ui(
         let feed: Vec<_> = feed
             .iter()
             .rev()
-            .map(|(text,level)| {
+            .map(|(text, level)| {
                 let s = match level.as_str() {
                     "WELCOME" => Style::default().fg(Color::Green),
                     "GOODBYE" => Style::default().fg(Color::Red),
@@ -109,9 +109,8 @@ fn draw_ui(
                 ListItem::new(text.as_ref()).style(s)
             })
             .collect();
-        let feed_box =
-            List::new(feed).block(Block::default().title("Feed").borders(Borders::ALL));
-            //Paragraph::new(feed).block(Block::default().title("Feed").borders(Borders::ALL));
+        let feed_box = List::new(feed).block(Block::default().title("Feed").borders(Borders::ALL));
+        //Paragraph::new(feed).block(Block::default().title("Feed").borders(Borders::ALL));
         f.render_widget(feed_box, vertical_chunks[0]);
 
         // Draw an input text box
@@ -133,7 +132,7 @@ fn draw_ui(
 }
 
 /// Run the TUI and process user input, until ESC is pressed.
-pub fn termui(name: String, channel: String, server: String) -> anyhow::Result<()> {
+pub fn termui(name: String, channel: String, server: String) -> anyhow::Result<Option<String>> {
     // Enable raw mode for the terminal
     enable_raw_mode()?;
 
@@ -158,8 +157,7 @@ pub fn termui(name: String, channel: String, server: String) -> anyhow::Result<(
     thread::spawn(move || tick_task(tick_rate, event_sender));
 
     // Data that drives the UI
-    //let mut feed = String::new();
-    let mut feed = Vec::<(String,String)>::new();
+    let mut feed = Vec::<(String, String)>::new();
     let mut input = String::new();
 
     let mut users = vec![name.clone()];
@@ -173,13 +171,17 @@ pub fn termui(name: String, channel: String, server: String) -> anyhow::Result<(
                     break;
                 }
                 KeyCode::Enter => {
-                    let content: String = input.drain(..).collect();
-                    let message = MessageType::Message {
-                        name: name.clone(),
-                        channel: channel.clone(),
-                        content,
-                    };
-                    to_server.send(message)?;
+                    if let Some(new) = input.strip_prefix("/cc ") {
+                        return Ok(Some(new.to_string()));
+                    } else {
+                        let content: String = input.drain(..).collect();
+                        let message = MessageType::Message {
+                            name: name.clone(),
+                            channel: channel.clone(),
+                            content,
+                        };
+                        to_server.send(message)?;
+                    }
                 }
                 KeyCode::Backspace => {
                     input.pop();
@@ -196,16 +198,13 @@ pub fn termui(name: String, channel: String, server: String) -> anyhow::Result<(
         while let Ok(message) = from_server.try_recv() {
             match message {
                 MessageType::Hello { name, .. } => {
-                    feed.push((name + " joined the channel","WELCOME".to_string()));
-                    //feed.push_str(&format!("{} joined the channel\n", name));
+                    feed.push((name + " joined the channel", "WELCOME".to_string()));
                 }
                 MessageType::Goodbye { name, .. } => {
-                    //feed.push_str(&format!("{} left the channel\n", name));
-                    feed.push((name + " left the channel","GOODBYE".to_string()));
+                    feed.push((name + " left the channel", "GOODBYE".to_string()));
                 }
                 MessageType::Message { name, content, .. } => {
-                    feed.push((name + " -> " + &content,"MESSAGE".to_string()));
-                    //feed.push_str(&format!("{} -> {}\n", name, content))
+                    feed.push((name + " -> " + &content, "MESSAGE".to_string()));
                 }
                 MessageType::ResponseMembers { members } => {
                     users = members;
@@ -227,5 +226,5 @@ pub fn termui(name: String, channel: String, server: String) -> anyhow::Result<(
     execute!(terminal.backend_mut(), LeaveAlternateScreen)
         .context("Failed to leave alternate screen")?;
 
-    Ok(())
+    Ok(None)
 }
