@@ -6,6 +6,8 @@ This is a client for IRCMQ, a clone of IRC, based on ZeroMQ, built in Rust.
 
 - [x] Users -> Multiple users can enter a channel.
 
+![different_users](https://imgur.com/a/nHfestq.gif "Different users")
+
 - [x] Channels -> Multiple channels can be created, joined and chatted in.
 
 - [x] Servers -> Multiple servers can run and you can connect to one of them at a time.
