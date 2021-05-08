@@ -41,11 +41,12 @@ fn main() -> anyhow::Result<()> {
         .unwrap_or("localhost")
         .to_string();
 
-    loop {
-        match termui(name.clone(), channel.clone(), server.clone()).context("Failed to run UI")? {
-            None => break,
-            Some(c) => channel = c,
-        }
+    // Run the main program.
+    // If the user changes channel, we restart the whole program.
+    while let Some(c) =
+        termui(name.clone(), channel.clone(), server.clone()).context("Failed to run UI")?
+    {
+        channel = c;
     }
 
     Ok(())
