@@ -23,6 +23,7 @@ use tui::{
     backend::CrosstermBackend,
     layout::{Constraint, Direction, Layout},
     widgets::{Block, Borders, List, ListItem, Paragraph},
+    style::{Color,Style},
     Terminal,
 };
 
@@ -61,7 +62,7 @@ fn draw_ui(
     terminal: &mut Terminal<CrosstermBackend<std::io::Stdout>>,
     channels: &[String],
     users: &[String],
-    feed: &str,
+    feed: &[(String,String)],
     input: &str,
 ) -> anyhow::Result<()> {
     terminal.draw(|f| {
@@ -96,8 +97,20 @@ fn draw_ui(
         f.render_widget(channels_box, chunks[0]);
 
         // Draw the main message feed
+        let feed: Vec<_> = feed
+            .iter()
+            .map(|(text,level)| {
+                let s = match level.as_str() {
+                    "WELCOME" => Style::default().fg(Color::Green),
+                    "GOODBYE" => Style::default().fg(Color::Red),
+                    _ => Style::default(),
+                };
+                ListItem::new(text.as_ref()).style(s)
+            })
+            .collect();
         let feed_box =
-            Paragraph::new(feed).block(Block::default().title("Feed").borders(Borders::ALL));
+            List::new(feed).block(Block::default().title("Feed").borders(Borders::ALL));
+            //Paragraph::new(feed).block(Block::default().title("Feed").borders(Borders::ALL));
         f.render_widget(feed_box, vertical_chunks[0]);
 
         // Draw an input text box
@@ -144,7 +157,8 @@ pub fn termui(name: String, channel: String, server: String) -> anyhow::Result<(
     thread::spawn(move || tick_task(tick_rate, event_sender));
 
     // Data that drives the UI
-    let mut feed = String::new();
+    //let mut feed = String::new();
+    let mut feed = Vec::<(String,String)>::new();
     let mut input = String::new();
 
     // FIXME: Request for users and channels should be done here instead of whatever spaghetti is
@@ -183,13 +197,16 @@ pub fn termui(name: String, channel: String, server: String) -> anyhow::Result<(
         while let Ok(message) = from_server.try_recv() {
             match message {
                 MessageType::Hello { name, .. } => {
-                    feed.push_str(&format!("{} joined the channel\n", name));
+                    feed.push((name + " joined the channel","WELCOME".to_string()));
+                    //feed.push_str(&format!("{} joined the channel\n", name));
                 }
                 MessageType::Goodbye { name, .. } => {
-                    feed.push_str(&format!("{} left the channel\n", name));
+                    //feed.push_str(&format!("{} left the channel\n", name));
+                    feed.push((name + " left the channel","GOODBYE".to_string()));
                 }
                 MessageType::Message { name, content, .. } => {
-                    feed.push_str(&format!("{} -> {}\n", name, content))
+                    feed.push((name + " -> " + &content,"MESSAGE".to_string()));
+                    //feed.push_str(&format!("{} -> {}\n", name, content))
                 }
                 MessageType::ResponseMembers { members } => {
                     users = members;
