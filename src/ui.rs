@@ -144,10 +144,8 @@ pub fn termui(name: String, channel: String, server: String) -> anyhow::Result<O
     let mut terminal = Terminal::new(backend).context("Failed to create terminal abstraction")?;
 
     // Create the server <-> client sockets and spawn threads that poll on them
-    let (to_server, from_server, t1, t2) = create_sockets(name.clone(), channel.clone(), &server)
+    let (to_server, from_server) = create_sockets(name.clone(), channel.clone(), &server)
         .context("Failed to create zmq sockets")?;
-    thread::spawn(t1);
-    thread::spawn(t2);
 
     // Setup a thread to handle input events from the user
     // The thread also generates tick events to refresh the UI
