@@ -35,13 +35,19 @@ fn main() -> anyhow::Result<()> {
 
     // Extract config
     let name = matches.value_of("name").unwrap().to_string();
-    let channel = matches.value_of("channel").unwrap_or("Channel #1").to_string();
+    let mut channel = matches.value_of("channel").unwrap_or("Channel #1").to_string();
     let server = matches
         .value_of("server")
         .unwrap_or("localhost")
         .to_string();
 
-    termui(name, channel, server).context("Failed to run UI")?;
+    // Run the main program.
+    // If the user changes channel, we restart the whole program.
+    while let Some(c) =
+        termui(name.clone(), channel.clone(), server.clone()).context("Failed to run UI")?
+    {
+        channel = c;
+    }
 
     Ok(())
 }

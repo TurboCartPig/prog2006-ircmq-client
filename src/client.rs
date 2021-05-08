@@ -1,6 +1,7 @@
 use crate::message::*;
 use anyhow::Context;
 use std::sync::mpsc;
+use std::thread;
 
 /// Send messages to the server and process replies.
 pub fn chat_task(
@@ -44,10 +45,17 @@ pub fn feed_task(
     sub_socket: zmq::Socket,
     server_sender: mpsc::Sender<MessageType>,
 ) -> anyhow::Result<()> {
+    let mut msg = zmq::Message::new();
+
+    // Block on listening to messages from server
     loop {
-        let _ = sub_socket.recv_string(0)?.unwrap();
-        let message = sub_socket.recv_string(0)?.unwrap();
-        let message = serde_json::from_str(&message).context("Failed to deserialize message")?;
+        sub_socket.recv(&mut msg, 0)?;
+        sub_socket.recv(&mut msg, 0)?;
+        let message = serde_json::from_str(
+            msg.as_str()
+                .expect("Failed to convert zmq message to string"),
+        )
+        .context("Failed to deserialize message")?;
 
         // If the channel has closed, quit
         if server_sender.send(message).is_err() {
@@ -63,12 +71,7 @@ pub fn create_sockets(
     name: String,
     channel: String,
     server: &str,
-) -> anyhow::Result<(
-    mpsc::Sender<MessageType>,
-    mpsc::Receiver<MessageType>,
-    impl FnOnce(),
-    impl FnOnce(),
-)> {
+) -> anyhow::Result<(mpsc::Sender<MessageType>, mpsc::Receiver<MessageType>)> {
     // Create zmq context and sockets
     let context = zmq::Context::new();
 
@@ -91,16 +94,16 @@ pub fn create_sockets(
         .connect(&format!("tcp://{}:6666", server))
         .context("Failed to connect to publisher")?;
 
-    let t1 = move || {
+    thread::spawn(move || {
         chat_task(name, channel, req_socket, to_server_receiver)
             .context("Failed to complete chat task")
             .unwrap()
-    };
-    let t2 = move || {
+    });
+    thread::spawn(move || {
         feed_task(sub_socket, from_server_sender)
             .context("Failed to complete feed task")
             .unwrap()
-    };
+    });
 
-    Ok((to_server_sender, from_server_receiver, t1, t2))
+    Ok((to_server_sender, from_server_receiver))
 }
