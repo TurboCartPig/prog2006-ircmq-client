@@ -211,7 +211,6 @@ pub fn termui(name: String, channel: String, server: String) -> anyhow::Result<O
                 } => {
                     channels = available;
                 }
-                _ => {} // Ignore messages that are not for us
             }
         }
 
