@@ -14,6 +14,29 @@ This is a client for IRCMQ, a clone of IRC, based on ZeroMQ, built in Rust.
 
 [x] - ZeroMQ -> JSON messages over ZeroMQ sockets makes for a robust and extensible core.
 
+
+## Compatibility
+
+As this is a somewhat advanced terminal user interface, it has some requirements to the terminal running it. We have tested the following terminals for compatibility.
+
+[x] - cmd - Compatible
+
+[x] - Windows Terminal - Compatible
+
+[_] - Windows PowerShell (builtin) - Not compatible
+
+[?] - Other windows terminals - Not tested
+
+[x] - GNOME Terminal - Compatible
+
+[x] - Alacritty - Compatible
+
+[x] - Kitty - Compatible
+
+[x] - Other linux terminals - Not tested (you should use alacritty anyway)
+
+[?] - MacOS terminals - Not tested
+
 ## Instructions
 
 **Clone the repo into a clean directory**
@@ -85,7 +108,6 @@ cargo build
 cargo run -- --name Sebern --channel Rust --server localhost
 ```
 
-
 ### Documentation
 
 cargo dock is the standard documentation tool for a rust project. To generate the documentation, with cargo installed, you can run:
@@ -98,3 +120,4 @@ You can also open the documentation right away, after generating, with:
 ```
 cargo dock --open
 ```
+
