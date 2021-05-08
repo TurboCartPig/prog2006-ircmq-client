@@ -35,6 +35,12 @@ enum Event {
     Tick,
 }
 
+enum FeedItem {
+    Hello,
+    Message,
+    Goodbye,
+}
+
 /// Generate tick and input events for the TUI.
 fn tick_task(tick_rate: Duration, event_sender: mpsc::Sender<Event>) {
     let mut last_tick = Instant::now();
@@ -62,7 +68,7 @@ fn draw_ui(
     terminal: &mut Terminal<CrosstermBackend<std::io::Stdout>>,
     channels: &[String],
     users: &[String],
-    feed: &[(String, String)],
+    feed: &[(String, FeedItem)],
     input: &str,
 ) -> anyhow::Result<()> {
     terminal.draw(|f| {
@@ -101,9 +107,9 @@ fn draw_ui(
             .iter()
             .rev()
             .map(|(text, level)| {
-                let s = match level.as_str() {
-                    "WELCOME" => Style::default().fg(Color::Green),
-                    "GOODBYE" => Style::default().fg(Color::Rgb(255,156,155)),
+                let s = match level {
+                    FeedItem::Hello => Style::default().fg(Color::Green),
+                    FeedItem::Goodbye => Style::default().fg(Color::Rgb(255, 156, 155)),
                     _ => Style::default(),
                 };
                 ListItem::new(text.as_ref()).style(s)
@@ -131,6 +137,8 @@ fn draw_ui(
 }
 
 /// Run the TUI and process user input, until ESC is pressed.
+/// The return value indicates if the program should be restarted with another channel,
+/// Or if we should terminate.
 pub fn termui(name: String, channel: String, server: String) -> anyhow::Result<Option<String>> {
     // Enable raw mode for the terminal
     enable_raw_mode()?;
@@ -154,7 +162,7 @@ pub fn termui(name: String, channel: String, server: String) -> anyhow::Result<O
     thread::spawn(move || tick_task(tick_rate, event_sender));
 
     // Data that drives the UI
-    let mut feed = Vec::<(String, String)>::new();
+    let mut feed = Vec::<(String, FeedItem)>::new();
     let mut input = String::new();
 
     let mut users = vec![name.clone()];
@@ -164,13 +172,17 @@ pub fn termui(name: String, channel: String, server: String) -> anyhow::Result<O
         // Block on event input, either a tick to refresh the UI, or an input event from the user
         match event_receiver.recv()? {
             Event::Input(ev) => match ev.code {
+                // Quit the program on Escape
                 KeyCode::Esc => {
                     break;
                 }
+                // Process built up input on Enter
                 KeyCode::Enter => {
+                    // If the user has written a command, process it
                     if let Some(new) = input.strip_prefix("/cc ") {
                         return Ok(Some(new.to_string()));
                     } else {
+                        // If the user has typed a message, process it
                         let content: String = input.drain(..).collect();
                         let message = MessageType::Message {
                             name: name.clone(),
@@ -180,9 +192,11 @@ pub fn termui(name: String, channel: String, server: String) -> anyhow::Result<O
                         to_server.send(message)?;
                     }
                 }
+                // Remove a char on Backspace
                 KeyCode::Backspace => {
                     input.pop();
                 }
+                // Add a char at the end of input
                 KeyCode::Char(c) => {
                     input.push(c);
                 }
@@ -195,13 +209,13 @@ pub fn termui(name: String, channel: String, server: String) -> anyhow::Result<O
         while let Ok(message) = from_server.try_recv() {
             match message {
                 MessageType::Hello { name, .. } => {
-                    feed.push((name + " joined the channel", "WELCOME".to_string()));
+                    feed.push((name + " joined the channel", FeedItem::Hello));
                 }
                 MessageType::Goodbye { name, .. } => {
-                    feed.push((name + " left the channel", "GOODBYE".to_string()));
+                    feed.push((name + " left the channel", FeedItem::Goodbye));
                 }
                 MessageType::Message { name, content, .. } => {
-                    feed.push((name + " -> " + &content, "MESSAGE".to_string()));
+                    feed.push((name + " -> " + &content, FeedItem::Message));
                 }
                 MessageType::ResponseMembers { members } => {
                     users = members;
