@@ -16,7 +16,8 @@ fn main() -> anyhow::Result<()> {
             Arg::with_name("name")
                 .short("n")
                 .long("name")
-                .takes_value(true),
+                .takes_value(true)
+                .required(true),
         )
         .arg(
             Arg::with_name("channel")
@@ -33,8 +34,8 @@ fn main() -> anyhow::Result<()> {
         .get_matches();
 
     // Extract config
-    let name = matches.value_of("name").unwrap_or("Sebern").to_string();
-    let channel = matches.value_of("channel").unwrap_or("A").to_string();
+    let name = matches.value_of("name").unwrap().to_string();
+    let channel = matches.value_of("channel").unwrap_or("Welcome").to_string();
     let server = matches
         .value_of("server")
         .unwrap_or("localhost")
