@@ -134,7 +134,7 @@ pub fn termui(name: String, channel: String, server: String) -> anyhow::Result<(
     // Create the server <-> client sockets and spawn threads that poll on them
     let (to_server, from_server, t1, t2) = create_sockets(name.clone(), channel.clone(), &server)
         .context("Failed to create zmq sockets")?;
-    let chat_thread = thread::spawn(t1);
+    thread::spawn(t1);
     thread::spawn(t2);
 
     // Setup a thread to handle input events from the user
@@ -182,6 +182,12 @@ pub fn termui(name: String, channel: String, server: String) -> anyhow::Result<(
         // Pull new messages from the server, ignore any errors
         while let Ok(message) = from_server.try_recv() {
             match message {
+                MessageType::Hello { name, .. } => {
+                    feed.push_str(&format!("{} joins the channel\n", name));
+                }
+                MessageType::Goodbye { name, .. } => {
+                    feed.push_str(&format!("{} leaves the channel\n", name));
+                }
                 MessageType::Message { name, content, .. } => {
                     feed.push_str(&format!("{} -> {}\n", name, content))
                 }
@@ -204,10 +210,6 @@ pub fn termui(name: String, channel: String, server: String) -> anyhow::Result<(
     disable_raw_mode().context("Failed to disable raw mode")?;
     execute!(terminal.backend_mut(), LeaveAlternateScreen)
         .context("Failed to leave alternate screen")?;
-
-    // Wait for the thread to send the goodbye message,
-    // that was initiated by the channel closing.
-    // chat_thread.join().unwrap();
 
     Ok(())
 }
