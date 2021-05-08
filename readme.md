@@ -21,3 +21,17 @@ Run with arguments (all arguments are optional, see `--help` for more):
 ```bash
 cargo run -- --name Sebern --channel Rust --server localhost
 ```
+
+## A word on compatibility
+
+As this is a somewhat advanced terminal user interface, it has some requirements to the terminal running it. We have tested the following terminals for compatibility.
+
+* cmd - Compatible
+* Windows Terminal - Compatible
+* Windows PowerShell (builtin) - Not compatible
+* Other windows terminals - Not tested
+* GNOME Terminal - Compatible
+* Alacritty - Compatible
+* Kitty - Compatible
+* Other linux terminals - Not tested (you should use alacritty anyway)
+* MacOS terminals - Not tested
