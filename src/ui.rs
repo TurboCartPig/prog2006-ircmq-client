@@ -103,7 +103,7 @@ fn draw_ui(
             .map(|(text,level)| {
                 let s = match level.as_str() {
                     "WELCOME" => Style::default().fg(Color::Green),
-                    "GOODBYE" => Style::default().fg(Color::Red),
+                    "GOODBYE" => Style::default().fg(Color::Rgb(255,156,155)),
                     _ => Style::default(),
                 };
                 ListItem::new(text.as_ref()).style(s)

@@ -35,7 +35,7 @@ fn main() -> anyhow::Result<()> {
 
     // Extract config
     let name = matches.value_of("name").unwrap().to_string();
-    let channel = matches.value_of("channel").unwrap_or("Welcome").to_string();
+    let channel = matches.value_of("channel").unwrap_or("Channel #1").to_string();
     let server = matches
         .value_of("server")
         .unwrap_or("localhost")
