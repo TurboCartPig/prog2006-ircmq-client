@@ -110,7 +110,6 @@ fn draw_ui(
             })
             .collect();
         let feed_box = List::new(feed).block(Block::default().title("Feed").borders(Borders::ALL));
-        //Paragraph::new(feed).block(Block::default().title("Feed").borders(Borders::ALL));
         f.render_widget(feed_box, vertical_chunks[0]);
 
         // Draw an input text box
