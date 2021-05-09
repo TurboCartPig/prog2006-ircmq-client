@@ -20,6 +20,10 @@ This is a client for IRCMQ, a clone of IRC, based on ZeroMQ, built in Rust.
 ### General client usage
 ![Different users](.gitlab/different_users.gif)
 ### Switching channels
+How to switch channels:
+```
+/cc <Desired channel>
+```
 ![Switching channels](.gitlab/channel-switch.gif)
 ## Compatibility
 
