@@ -22,6 +22,9 @@ pub enum MessageType {
 
 #[cfg(test)]
 mod test {
+    //! Test that MessageType serializes and deserializes to and from the expected strings and
+    //! structs
+
     #[test]
     fn test_serialize_message() {
         let message = crate::message::MessageType::Message {
@@ -30,8 +33,8 @@ mod test {
             content: "Heihei".into(),
         };
 
-        let message =
-            serde_json::to_string(&message).expect("Serde failed to serialize MessageType::Mesage");
+        let message = serde_json::to_string(&message)
+            .expect("Serde failed to serialize MessageType::Message");
 
         assert_eq!(
             message,
