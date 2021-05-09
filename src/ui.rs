@@ -209,10 +209,10 @@ pub fn termui(name: String, channel: String, server: String) -> anyhow::Result<O
         while let Ok(message) = from_server.try_recv() {
             match message {
                 MessageType::Hello { name, .. } => {
-                    feed.push((name + " joined the channel", FeedItem::Hello));
+                    feed.push((name + " joined " + channel.as_str(), FeedItem::Hello));
                 }
                 MessageType::Goodbye { name, .. } => {
-                    feed.push((name + " left the channel", FeedItem::Goodbye));
+                    feed.push((name + " left " + channel.as_str(), FeedItem::Goodbye));
                 }
                 MessageType::Message { name, content, .. } => {
                     feed.push((name + " -> " + &content, FeedItem::Message));
