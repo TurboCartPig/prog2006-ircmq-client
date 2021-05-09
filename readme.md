@@ -6,7 +6,7 @@ This is a client for IRCMQ, a clone of IRC, based on ZeroMQ, built in Rust.
 
 - [x] Users -> Multiple users can enter a channel.
 
-![Different users](.gitlab/different_users.gif)
+
 
 - [x] Channels -> Multiple channels can be created, joined and chatted in.
 
@@ -16,7 +16,11 @@ This is a client for IRCMQ, a clone of IRC, based on ZeroMQ, built in Rust.
 
 - [x] ZeroMQ -> JSON messages over ZeroMQ sockets makes for a robust and extensible core.
 
-
+## Demo of features
+### General client usage
+![Different users](.gitlab/different_users.gif)
+### Switching channels
+![Switching channels](.gitlab/channel-switch.gif)
 ## Compatibility
 
 As this is a somewhat advanced terminal user interface, it has some requirements to the terminal running it. We have tested the following terminals for compatibility.
