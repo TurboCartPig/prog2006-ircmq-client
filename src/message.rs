@@ -56,4 +56,128 @@ mod test {
             }
         );
     }
+
+    #[test]
+    fn test_serialize_hello() {
+        let message = crate::message::MessageType::Hello {
+            name: String::from("Name"),
+            channel: String::from("Channel"),
+        };
+
+        let message =
+            serde_json::to_string(&message).expect("Serde failed to serialize MessageType::Hello");
+
+        assert_eq!(
+            message,
+            "{\"tag\":\"Hello\",\"name\":\"Name\",\"channel\":\"Channel\"}"
+        );
+    }
+
+    #[test]
+    fn test_deserialize_hello() {
+        let message: &str = "{\"tag\":\"Hello\",\"name\":\"Name\",\"channel\":\"Channel\"}";
+
+        let message: crate::message::MessageType =
+            serde_json::from_str(message).expect("Serde failed to deserialize MessageType::Hello");
+
+        assert_eq!(
+            message,
+            crate::message::MessageType::Hello {
+                name: String::from("Name"),
+                channel: String::from("Channel"),
+            }
+        );
+    }
+
+    #[test]
+    fn test_serialize_goodbye() {
+        let message = crate::message::MessageType::Goodbye {
+            name: String::from("Name"),
+            channel: String::from("Channel"),
+        };
+
+        let message = serde_json::to_string(&message)
+            .expect("Serde failed to serialize MessageType::Goodbye");
+
+        assert_eq!(
+            message,
+            "{\"tag\":\"Goodbye\",\"name\":\"Name\",\"channel\":\"Channel\"}"
+        );
+    }
+
+    #[test]
+    fn test_deserialize_goodbye() {
+        let message: &str = "{\"tag\":\"Goodbye\",\"name\":\"Name\",\"channel\":\"Channel\"}";
+
+        let message: crate::message::MessageType = serde_json::from_str(message)
+            .expect("Serde failed to deserialize MessageType::Goodbye");
+
+        assert_eq!(
+            message,
+            crate::message::MessageType::Goodbye {
+                name: String::from("Name"),
+                channel: String::from("Channel"),
+            }
+        );
+    }
+
+    #[test]
+    fn test_serialize_response_members() {
+        let message = crate::message::MessageType::ResponseMembers {
+            members: vec![String::from("Member")],
+        };
+
+        let message = serde_json::to_string(&message)
+            .expect("Serde failed to serialize MessageType::ResponseMembers");
+
+        assert_eq!(
+            message,
+            "{\"tag\":\"ResponseMembers\",\"members\":[\"Member\"]}"
+        );
+    }
+
+    #[test]
+    fn test_deserialize_response_members() {
+        let message: &str = "{\"tag\":\"ResponseMembers\",\"members\":[\"Member\"]}";
+
+        let message: crate::message::MessageType = serde_json::from_str(message)
+            .expect("Serde failed to deserialize MessageType::ResponseMembers");
+
+        assert_eq!(
+            message,
+            crate::message::MessageType::ResponseMembers {
+                members: vec![String::from("Member")],
+            }
+        );
+    }
+
+    #[test]
+    fn test_serialize_response_channels() {
+        let message = crate::message::MessageType::ResponseChannels {
+            channels: vec![String::from("Channel")],
+        };
+
+        let message = serde_json::to_string(&message)
+            .expect("Serde failed to serialize MessageType::ResponseChannels");
+
+        assert_eq!(
+            message,
+            "{\"tag\":\"ResponseChannels\",\"channels\":[\"Channel\"]}"
+        );
+    }
+
+    #[test]
+    fn test_deserialize_response_channel() {
+        let message: &str = "{\"tag\":\"ResponseChannels\",\"channels\":[\"Channel\"]}";
+
+        let message: crate::message::MessageType = serde_json::from_str(message)
+            .expect("Serde failed to deserialize MessageType::ResponseChannels");
+
+        assert_eq!(
+            message,
+            crate::message::MessageType::ResponseChannels {
+                channels: vec![String::from("Channel")],
+            },
+        );
+    }
 }
